@@ -1,0 +1,96 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+import subprocess
+import os
+import requests
+import socket
+import time
+from tqdm import tqdm
+
+ISO_PATH = "/tmp/BornToSecHackMe-v1.1.iso"
+ISO_NAME = os.path.basename(ISO_PATH)
+VM_PROC = None
+
+def download_iso():
+    if os.path.isfile(ISO_PATH):
+        print(f"[*] {ISO_NAME} already downloaded!")
+        return
+    req = requests.get(f"https://cdn.intra.42.fr/isos/{ISO_NAME}", stream=True)
+    size = int(req.headers.get("content-length", 0))
+    # iterate with tqdm
+    with open(ISO_PATH, "wb") as f:
+        for chunk in tqdm(req.iter_content(chunk_size=1024), desc=ISO_NAME, unit="KB", total=int(size / 1024)):
+            if chunk:
+                f.write(chunk)
+
+def detect_network_interface() -> str:
+    """
+    Returns the first virbrN interface found, returns None if none found
+    """
+    print("[#] Detecting libvirt network interface... ", end="", flush=True)
+    interfaces = subprocess.check_output("ip link | grep -oP '(?<=: ).*(?=:)'", shell=True).decode("utf-8").split("\n")
+    for interface in interfaces:
+        if interface.startswith("virbr"):
+            print("done! using {}\r[+".format(interface))
+            return interface
+
+def get_interface_inet(interface: str) -> str:
+    """
+    Returns the first inet address of the interface (and mask)
+    Example: 192.168.100.1/24
+    """
+    print("[#] Getting interface inet address... ", end="", flush=True)
+    inet = subprocess.check_output(f"ip addr show {interface} | grep -oP '(?<=inet ).*(?= brd)'", shell=True).decode("utf-8").split("\n")[0]
+    print("done! inet: {}\r[+".format(inet))
+    return inet
+
+def vm_alive(inet: str) -> str:
+    """
+    Scans the network for port 443 on given inet, using nmap
+    Checks for the port 443 which is known to be open on boot2root
+    If the port is open, returns the IP address of the VM, otherwise None
+    """
+    try:
+        scan = subprocess.check_output(f"nmap -p 443 -oG - {inet} | grep -oP '(?<=Host: ).*(?=Ports)' | grep -v {inet.split('/')[0]}", shell=True).decode("utf-8").split("\n")[0]
+        if scan:
+            return scan
+        else:
+            time.sleep(5)
+    except: # nmap didn't find anything
+        time.sleep(5)
+
+def start_vm(interface: str):
+    global VM_PROC
+    VM_PROC = subprocess.Popen(
+        [
+            "/usr/bin/qemu-system-x86_64",
+            "-m",
+            "4G",
+            "-enable-kvm",
+            "-net", "nic,model=virtio,macaddr=52:54:00:42:42:42",
+            "-net", f"bridge,br={interface}",
+            "-smp", "cores=4",
+            ISO_PATH
+        ]
+    )
+    inet = get_interface_inet(interface)
+    ip = vm_alive(inet)
+    while ip is None:
+        ip = vm_alive(inet)
+    ip = ip.split(" ")[0].strip() # nmap output has leading ()
+    print(f"[+] VM booted at {ip}")
+
+if __name__ == "__main__":
+    download_iso()
+    interface = detect_network_interface()
+    if interface is None:
+        print("[-] No libvirt network interface found, aborting")
+        exit(1)
+    start_vm(interface)
+    print("[!] Press CTRL+C to kill the VM")
+    try: # believe it or not, that's the shortest way to wait for a SIGINT
+        time.sleep(2147483647)
+    except KeyboardInterrupt:
+        print("[!] Sending a SIGKILL to the VM...")
+        VM_PROC.kill()
