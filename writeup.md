@@ -56,7 +56,7 @@ So there's a lot of services running here.
 
 # HTTPS
 
-Fuzzing the HTTPS service using `ffuf -w fuzz-Bo0oM.txt -u https://192.168.56.101/FUZZ -mc 200,301,302,307,401,403,405,500` reveals multiple endpoints :
+Fuzzing the HTTPS service using `ffuf -w fuzz-Bo0oM.txt -u https://boot2root/FUZZ -mc 200,301,302,307,401,403,405,500` reveals multiple endpoints :
 
 ```
 cgi-bin/                [Status: 403, Size: 291, Words: 21, Lines: 11]
@@ -389,7 +389,7 @@ $ ssh laurie@192.168.56.103
        |____/ \___/|_|  |_| |_|_|\___/_____/ \___|\___|
 
                        Good luck & Have fun
-laurie@192.168.56.101's password: 
+laurie@boot2root's password: 
 laurie@BornToSecHackMe:~$ id
 uid=1003(laurie) gid=1003(laurie) groups=1003(laurie)
 laurie@BornToSecHackMe:~$
@@ -441,7 +441,7 @@ o
 Let's get the binary on our computer and reverse it.
 
 ```sh
-$ scp laurie@192.168.56.101:bomb .
+$ scp laurie@boot2root:bomb .
         ____                _______    _____           
        |  _ \              |__   __|  / ____|          
        | |_) | ___  _ __ _ __ | | ___| (___   ___  ___ 
@@ -450,7 +450,7 @@ $ scp laurie@192.168.56.101:bomb .
        |____/ \___/|_|  |_| |_|_|\___/_____/ \___|\___|
 
                        Good luck & Have fun
-laurie@192.168.56.101's password: 
+laurie@boot2root's password: 
 bomb 100%   26KB  30.4MB/s   00:00
 ```
 
@@ -1218,7 +1218,7 @@ $ ssh thor@192.168.56.103
        |____/ \___/|_|  |_| |_|_|\___/_____/ \___|\___|
 
                        Good luck & Have fun
-thor@192.168.56.101's password:
+thor@boot2root's password:
 thor@BornToSecHackMe:~$ ls -la
 total 37
 drwxr-x--- 3 thor     thor   129 Oct 15  2015 .
@@ -1307,7 +1307,7 @@ And this is the password for the `zaz` user.
 ## Binary exploitation
 
 ```sh
-ssh zaz@192.168.56.101
+ssh zaz@boot2root
         ____                _______    _____           
        |  _ \              |__   __|  / ____|          
        | |_) | ___  _ __ _ __ | | ___| (___   ___  ___ 
@@ -1316,7 +1316,7 @@ ssh zaz@192.168.56.101
        |____/ \___/|_|  |_| |_|_|\___/_____/ \___|\___|
 
                        Good luck & Have fun
-zaz@192.168.56.101's password: 
+zaz@boot2root's password: 
 zaz@BornToSecHackMe:~$ ls -la
 total 12
 drwxr-x--- 4 zaz      zaz   147 Oct 15  2015 .
